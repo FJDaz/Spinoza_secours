@@ -1,3 +1,14 @@
+---
+title: 3 Philosophes - Test Prompts
+emoji: 🎭
+colorFrom: blue
+colorTo: purple
+sdk: gradio
+sdk_version: "5.49.1"
+app_file: app.py
+pinned: false
+---
+
 # 🎭 3 Philosophes - Test Prompts Système
 
 **Expérience :** 1 modèle (Qwen 14B + LoRA Spinoza NB), 3 prompts système différents

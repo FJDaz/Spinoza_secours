@@ -1,7 +1,7 @@
-// app.js - Version production avec backend Railway
+// app.js - Version 3 Philosophes avec HF Space 3_PHI
 
 // Configuration API production
-const API_BASE_URL = 'https://bergson-api-production.up.railway.app';
+const API_BASE_URL = 'https://fjdaz-3-phi.hf.space';
 
 // État global
 const philosopherStates = {
@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initPhilosophers() {
+  console.log('initPhilosophers');
   const philosophers = ['bergson', 'kant', 'spinoza'];
 
   philosophers.forEach(phil => {
@@ -44,7 +45,7 @@ function initPhilosophers() {
       dialogue.hidden = !wasHidden;
 
       // Si on ouvre et pas encore initialisé
-      if (!wasHidden && !philosopherStates[phil].active) {
+      if (wasHidden && !philosopherStates[phil].active) {
         await initConversation(phil);
       }
 
@@ -75,8 +76,7 @@ async function initConversation(philosopher) {
     console.log(`[INIT] ${philosopher}...`);
 
     const response = await fetch(`${API_BASE_URL}/init/${philosopher}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
+      method: 'GET'
     });
 
     if (!response.ok) {
@@ -117,12 +117,17 @@ async function sendMessage(philosopher) {
   try {
     console.log(`[CHAT] ${philosopher}: ${userMessage.substring(0, 50)}...`);
 
-    const response = await fetch(`${API_BASE_URL}/chat/${philosopher}`, {
+    // Filtrer l'historique pour enlever les entrées avec null
+    const cleanHistory = philosopherStates[philosopher].history.filter(
+      ([user, assistant]) => user !== null && assistant !== null
+    );
+
+    const response = await fetch(`${API_BASE_URL}/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         message: userMessage,
-        history: philosopherStates[philosopher].history,
+        history: cleanHistory,
         philosopher: philosopher
       })
     });
@@ -134,9 +139,14 @@ async function sendMessage(philosopher) {
     const data = await response.json();
     console.log(`[CHAT] ${philosopher} réponse:`, data);
 
-    // Afficher passages RAG en console
+    // Afficher passages RAG en console (si présents)
     if (data.rag_passages && data.rag_passages.length) {
       console.log(`[RAG] ${data.rag_passages.length} passages:`, data.rag_passages);
+    }
+
+    // Afficher contexte détecté
+    if (data.contexte) {
+      console.log(`[CONTEXTE] ${data.contexte}`);
     }
 
     // Mettre à jour historique

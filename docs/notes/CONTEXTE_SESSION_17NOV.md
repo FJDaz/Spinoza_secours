@@ -459,7 +459,272 @@ const result = await client.predict("/chat_function", {
 
 ---
 
-**Dernière modification** : 18 novembre 2025 - 23:20
-**Status** : Dépôt nettoyé, structure clarifiée, documentation complète
+---
+
+## 🎯 Architecture Finale Simplifiée (19 Novembre 2025)
+
+### Stack Finale
+
+**Architecture ultra-simplifiée :**
+```
+Frontend (fjdaz.com)
+    ↓
+API REST HF Space (3_PHI)
+    ↓
+Qwen 14B + LoRA Spinoza NB + 3 Prompts Système
+```
+
+### Composants
+
+#### Frontend
+- **URL 3 Philosophes** : `fjdaz.com/3phi/`
+  - `index.html` → Interface 3 philosophes (Bergson, Kant, Spinoza)
+  - `app.js` → JavaScript connecté au Space 3_PHI
+- **URL Spinoza Seul** : `fjdaz.com/bergson/`
+  - `index_spinoza.html` → Interface Spinoza seul
+  - Backend : Space HF `bergsonAndFriends` (Spinoza uniquement)
+- **Assets** : CSS/Images depuis `https://fjdaz.com/bergson/statics/`
+
+#### Backend
+
+**Space HF `3_PHI` (3 Philosophes)** :
+- **URL API** : `https://fjdaz-3-phi.hf.space`
+- **Endpoints REST** :
+  - `GET /health` → Vérification statut modèle
+  - `GET /init/{philosopher}` → Question d'amorce (spinoza/bergson/kant)
+  - `POST /chat` → Chat avec `{message, history, philosopher}`
+- **Modèle** : Qwen 2.5 14B + LoRA Spinoza Niveau B
+- **Prompts** : 3 prompts système (Spinoza, Bergson, Kant) injectés dans le message
+- **GPU** : L4 (~18GB VRAM) ou A10G (24GB VRAM)
+- **RAG** : ❌ Non géré dans le Space (pas de RAG dans `app.py`)
+
+**Space HF `bergsonAndFriends` (Spinoza Seul)** :
+- **URL API** : `https://fjdaz-bergsonandfriends.hf.space`
+- **Modèle** : Qwen 2.5 14B + LoRA Spinoza Niveau B
+- **GPU** : A10G (24GB VRAM)
+- **Usage** : Frontend `fjdaz.com/bergson/` (Spinoza seul)
+
+### Fonctionnalités
+
+✅ **3 Philosophes fonctionnels** :
+- Spinoza : Formules dialectiques ("MAIS ALORS"), causalité nécessaire
+- Bergson : Métaphores temporelles, opposition durée vs temps spatial
+- Kant : Distinctions (phénomène/noumène), examen critique
+
+✅ **Détection contextuelle** : accord/confusion/résistance/neutre
+
+✅ **Questions d'amorce** : Questions BAC personnalisées par philosophe
+
+✅ **Test concluant** : Un seul LoRA (Spinoza NB) suffit pour simuler 3 philosophes via prompts système
+
+### Services Obsolètes (Non Utilisés pour BAF)
+
+❌ **Netlify Functions** : Plus utilisé pour BAF (architecture simplifiée)
+  - Fichiers déplacés : `garbage/obsolètes_BAF/netlify/`, `netlify.toml`, `package.json`, `src/`
+  
+❌ **Railway** : Plus utilisé pour BAF (appels directs au Space HF)
+  - Fichiers déplacés : `garbage/obsolètes_BAF/snb_api_*.py`, `Procfile`, `nixpacks.toml`
+  - ⚠️ **Note** : Railway est toujours utilisé par **I-Amiens** (projet séparé)
+  
+❌ **Modal** : Plus utilisé pour BAF (Space HF direct)
+  - Fichiers déplacés : `garbage/obsolètes_BAF/snb_api_modal.py`, `modal_spinoza_api.py`
+
+**Spaces HF Actifs** :
+- ✅ **`bergsonAndFriends`** : Spinoza seul (BAF) → `fjdaz.com/bergson/`
+- ✅ **`3_PHI`** : 3 philosophes (SNB) → `fjdaz.com/3phi/`
+
+### Fichiers Actifs
+
+**Frontend :**
+- `/Users/francois-jeandazin/bergsonAndFriends/index.html` → Interface 3 philosophes (`fjdaz.com/3phi/`)
+- `/Users/francois-jeandazin/bergsonAndFriends/app.js` → JS connecté à 3_PHI
+- `index_spinoza.html` → Interface Spinoza seul (`fjdaz.com/bergson/`) - hébergé sur fjdaz.com
+
+**Backend :**
+- `/Users/francois-jeandazin/bergsonAndFriends/3_PHI_HF/app.py` → Code Space HF 3_PHI
+- `/Users/francois-jeandazin/bergsonAndFriends/3_PHI_HF/requirements.txt` → Dépendances 3_PHI
+- `/Users/francois-jeandazin/bergsonAndFriends/3_PHI_HF/README.md` → Documentation 3_PHI
+- `/Users/francois-jeandazin/bergsonAndFriends/bergsonAndFriends_HF/app.py` → Code Space HF bergsonAndFriends (Spinoza seul)
+
+**Fichiers Obsolètes (Déplacés) :**
+- `garbage/obsolètes_BAF/` → Netlify Functions, Railway, Modal (non utilisés pour BAF)
+
+### Corrections Apportées
+
+1. ✅ **Fix click handler** : `!wasHidden` → `wasHidden` (ligne 48 app.js)
+2. ✅ **Fix historique null** : Filtre des entrées null avant envoi au backend (lignes 120-123 app.js)
+3. ✅ **Nettoyage structure** : Fichiers obsolètes déplacés dans `garbage/`
+
+### URLs Actuelles
+
+**Frontend :**
+- **3 Philosophes** : `https://fjdaz.com/3phi/` → Space `3_PHI`
+- **Spinoza Seul** : `https://fjdaz.com/bergson/` → Space `bergsonAndFriends`
+
+**Backend API 3_PHI :**
+- **Base** : `https://fjdaz-3-phi.hf.space`
+- **Health Check** : `https://fjdaz-3-phi.hf.space/health`
+- **Init** : `https://fjdaz-3-phi.hf.space/init/{philosopher}` (spinoza/bergson/kant)
+- **Chat** : `https://fjdaz-3-phi.hf.space/chat` (POST)
+
+**Backend API bergsonAndFriends :**
+- **Base** : `https://fjdaz-bergsonandfriends.hf.space`
+- **API Gradio** : `//chat_function`, `/lambda`, `/lambda_1`
+
+---
+
+**Dernière modification** : 19 novembre 2025 - 22:00
+**Status** : Architecture simplifiée et fonctionnelle - Frontend fjdaz.com → API REST HF Space 3_PHI
+
+---
+
+## 🎨 Travail sur les Prompts Système (19 Novembre 2025)
+
+### ✅ Réalisations
+
+#### 1. Traduction des Schèmes Philosophiques ✅
+
+**Objectif** : Adapter les formulations des schèmes logiques pour un public lycéen (18 ans) tout en préservant la qualité philosophique.
+
+**Fichiers modifiés :**
+- ✅ `/Users/francois-jeandazin/bergsonAndFriends/3_PHI_HF/Prompts/Schemes Bergson.json`
+  - Formulations traduites en langue contemporaine intelligible
+  - Style conversationnel, métaphores accessibles
+  - Préservation de la rigueur philosophique
+  
+- ✅ `/Users/francois-jeandazin/bergsonAndFriends/3_PHI_HF/Prompts/Schemes Kant.json`
+  - Formulations adaptées au niveau lycéen
+  - Simplification progressive (3 versions : contemporain → formel → lycéen)
+  - Langage clair sans compromettre la profondeur
+
+**Intégration dans `app.py` :**
+- ✅ Fonction `charger_schemes()` → Charge les schèmes depuis JSON
+- ✅ Fonctions `formater_schemes_bergson()` et `formater_schemes_kant()` → Formatent pour prompts
+- ✅ Schèmes intégrés dans `SYSTEM_PROMPTS` pour Bergson et Kant
+
+#### 2. Variations de Formulations ✅
+
+**Problème identifié :** Formulations trop systématiques ("mais alors", "Donc tu es d'accord") → Dialogue répétitif
+
+**Solution implémentée :**
+- ✅ "MAIS ALORS" → "mais alors" (minuscules partout)
+- ✅ Instructions variées dans `construire_prompt_contextuel()` :
+  - **Résistance** : "Varie tes formulations : 'mais alors', 'pourtant', 'sauf que', 'or', 'il y a une tension ici', 'c'est contradictoire', etc."
+  - **Accord** : "Varie tes transitions : 'Donc', 'Alors', 'Cela implique', 'Si on pousse la logique', etc."
+
+**Document créé :**
+- ✅ `3_PHI_HF/Prompts/VARIATIONS_FORMULATIONS.md` → Suggestions et stratégies
+
+#### 3. Suppression Code Gradio ✅
+
+**Action :** Retrait complet du code Gradio de `3_PHI_HF/app.py`
+- ✅ Interface uniquement via API REST FastAPI
+- ✅ Frontend appelle directement `/chat` et `/init/{philosopher}`
+- ✅ Simplification du code
+
+### ⚠️ Problème Identifié : RAG et Style
+
+#### Problème Critique
+
+**Constat :** Les passages RAG bruts (texte authentique des œuvres) cassent le style reformulé/adapté de chaque philosophe.
+
+**Raisons :**
+- Style lourd, académique vs style conversationnel lycéen
+- Première personne vs troisième personne
+- Langage contemporain vs langage classique
+- Effort de reformulation produit pour chaque philosophe → RAG brut annule cet effort
+
+**Exemple du problème :**
+```
+Prompt système : "Tu es Spinoza, tu dialogues en première personne, langage lycéen..."
+Passage RAG brut : "Deus sive Natura, substantia unica, ex necessitate causae..."
+→ Contradiction de style, lourdeur, perte de cohérence
+```
+
+#### Solution Proposée
+
+**Document créé :**
+- ✅ `3_PHI_HF/Prompts/INTEGRATION_RAG_INTELLIGENTE.md` → Stratégies d'intégration intelligente
+
+**Stratégie recommandée :**
+1. **Extraction d'IDÉES** (pas de texte brut)
+   - Extraire les concepts/phrases principales
+   - Enlever citations, références complexes
+   - Simplifier le langage
+
+2. **Reformulation dans le style du philosophe**
+   - Première personne ("Je montre que...", "Je révèle que...")
+   - Langage lycéen, conversationnel
+   - Intégration naturelle dans le style
+
+3. **Instructions claires au modèle**
+   - "Reformule ces idées dans TON style"
+   - "Ne récite pas le texte brut"
+   - "Intègre naturellement dans ton raisonnement"
+
+**Fonction proposée :**
+```python
+def extraire_idees_passage(passage: Dict, philosopher: str) -> str:
+    """
+    Extrait les IDÉES d'un passage (pas le texte brut)
+    Reformule dans le style du philosophe (première personne, langage lycéen)
+    """
+    # Découper en phrases, extraire idées principales
+    # Reformuler selon le philosophe (Spinoza/Bergson/Kant)
+    # Retourner idées reformulées
+```
+
+**Avantages :**
+- ✅ Style préservé (première personne, lycéen)
+- ✅ Pas de lourdeur académique
+- ✅ Cohérence philosophique maintenue
+- ✅ RAG utile sans casser le dialogue
+
+### 📝 Documents Créés (19 Nov)
+
+1. **`VARIATIONS_FORMULATIONS.md`**
+   - Alternatives à "mais alors" et "Donc tu es d'accord"
+   - Stratégies d'implémentation
+   - Exemples par philosophe
+
+2. **`INTEGRATION_RAG_INTELLIGENTE.md`**
+   - 4 stratégies d'intégration RAG
+   - Solution au problème de style (extraction + reformulation)
+   - Code d'exemple pour `extraire_idees_passage()`
+   - Instructions pour utilisation intelligente
+
+### ⏳ Prochaines Étapes
+
+1. ⏳ **Implémenter `extraire_idees_passage()`** dans `app.py`
+2. ⏳ **Tester RAG avec reformulation** (vérifier que le style reste conversationnel)
+3. ⏳ **Ajuster seuil de pertinence** selon résultats
+4. ⏳ **Optimiser performance** (cache corpus en mémoire)
+
+### 🎯 État Actuel des Prompts
+
+**Spinoza :**
+- ✅ Schèmes intégrés (via LoRA acquis)
+- ✅ Formulations variées (résistance/accord)
+- ✅ Style conversationnel, première personne
+
+**Bergson :**
+- ✅ Schèmes chargés depuis JSON et intégrés
+- ✅ Formulations variées
+- ✅ Style conversationnel, métaphores accessibles
+
+**Kant :**
+- ✅ Schèmes chargés depuis JSON et intégrés
+- ✅ Formulations variées
+- ✅ Style conversationnel, distinctions claires
+
+**RAG :**
+- ⚠️ Problème de style identifié
+- ✅ Solution documentée (extraction + reformulation)
+- ⏳ Implémentation à faire
+
+---
+
+**Dernière modification** : 19 novembre 2025 - 23:30
+**Status** : Prompts système optimisés, problème RAG identifié et solution documentée
 
 
