@@ -15,8 +15,7 @@ import uvicorn
 # ============================================
 
 BASE_MODEL = "mistralai/Mistral-7B-Instruct-v0.2"
-ADAPTER_MODEL = "FJDaz/3_PHI"
-ADAPTER_SUBFOLDER = "Spinoza_Secours"
+ADAPTER_MODEL = "FJDaz/mistral-7b-philosophes-lora"
 HF_TOKEN = os.getenv("HF_TOKEN")
 
 # ============================================
@@ -212,7 +211,6 @@ def load_model():
     model = PeftModel.from_pretrained(
         base_model,
         ADAPTER_MODEL,
-        subfolder=ADAPTER_SUBFOLDER,
         token=HF_TOKEN
     )
 
