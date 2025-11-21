@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spinoza - Bergson and Friends</title>
+<link rel="stylesheet" href="https://fjdaz.com/bergson/statics/style.css">
+<link rel="stylesheet" href="https://fjdaz.com/bergson/statics/responsive.css" media="screen and (max-width: 768px)">
+</head>
+<body>
+<div class="desktop-version">
+<header>
+  <img src="https://fjdaz.com/bergson/statics/img/BergsonAndFriendsLOGO.png">
+</header>
+<main>
+  <section class="philosophers">
+
+    <!-- Spinoza uniquement -->
+    <article class="philosopher" id="spinoza">
+      <button class="philosopher-trigger">
+        <h2>Baruch <span>Spinoza</span></h2>
+        <img src="https://fjdaz.com/bergson/statics/img/Spinoza.png" alt="Baruch Spinoza">
+      </button>
+      <div class="dialogue" hidden>
+        <div class="qa-history"></div>
+        <form class="qa-form">
+          <textarea id="question-spinoza" name="question" placeholder="Pose ta question à Spinoza..."></textarea>
+          <input type="image" src="https://fjdaz.com/bergson/statics/img/Submit.png" alt="envoyer">
+        </form>
+      </div>
+    </article>
+
+  </section>
+</main>
+</div>
+
+<!-- VERSION MOBILE DÉDIÉE -->
+<div class="mobile-version" style="display: none;">
+  <header>
+    <img src="https://fjdaz.com/bergson/statics/img/BergsonAndFriendsLOGO.png" alt="Bergson and Friends">
+  </header>
+  
+  <main>
+    <!-- Spinoza - Version mobile -->
+    <section class="mobile-philosophers">
+      <article class="mobile-philosopher" id="mobile-spinoza" data-philosopher="spinoza">
+        <button class="mobile-philosopher-trigger">
+          <img src="https://fjdaz.com/bergson/statics/img/Spinoza.png" alt="Baruch Spinoza">
+          <span>Baruch Spinoza</span>
+        </button>
+      </article>
+    </section>
+    
+    <!-- Zone conversation mobile - apparaît quand Spinoza est sélectionné -->
+    <section class="mobile-conversation" id="mobile-conversation" style="display: none;">
+      
+      <!-- Spinoza actif en haut -->
+      <div class="mobile-active-philosopher">
+        <img id="mobile-active-img" src="https://fjdaz.com/bergson/statics/img/Spinoza.png" alt="Baruch Spinoza">
+        <h2 id="mobile-active-name">Baruch Spinoza</h2>
+      </div>
+      
+      <!-- Zone conversation -->
+      <div class="mobile-conversation-content">
+        <div class="mobile-conversation-right">
+          <!-- Greeting initial -->
+          <div class="mobile-greeting" id="mobile-greeting">Bonjour, cher ami. De quel problème désirez-vous que nous nous entretenions ?</div>
+          
+          <!-- Historique Q/A -->
+          <div class="mobile-qa-history" id="mobile-qa-history">
+            <!-- Les Q/A apparaîtront ici dynamiquement -->
+          </div>
+          
+          <!-- Formulaire -->
+          <form class="mobile-qa-form" id="mobile-qa-form">
+            <textarea id="mobile-question-spinoza" placeholder="Posez votre question à Spinoza..." rows="3"></textarea>
+            <button type="submit">Envoyer</button>
+          </form>
+        </div>
+      </div>
+      
+    </section>
+  </main>
+</div>
+
+<script>
+// Configuration API ngrok
+// ⚠️ REMPLACE par ton URL ngrok : https://nonremunerative-rory-unbreakably.ngrok-free.dev
+const API_BASE_URL = 'https://nonremunerative-rory-unbreakably.ngrok-free.dev';
+
+// État conversation
+let conversationHistory = [];
+
+// Détection mobile/desktop
+const isMobile = window.innerWidth <= 768;
+const desktopVersion = document.querySelector('.desktop-version');
+const mobileVersion = document.querySelector('.mobile-version');
+
+// Afficher la bonne version
+if (isMobile) {
+  desktopVersion.style.display = 'none';
+  mobileVersion.style.display = 'block';
+} else {
+  desktopVersion.style.display = 'block';
+  mobileVersion.style.display = 'none';
+}
+
+// Gérer le resize
+window.addEventListener('resize', () => {
+  const nowMobile = window.innerWidth <= 768;
+  if (nowMobile !== isMobile) {
+    location.reload(); // Recharger si changement de mode
+  }
+});
+
+// Éléments DOM Desktop
+const article = document.getElementById('spinoza');
+const trigger = article?.querySelector('.philosopher-trigger');
+const dialogue = article?.querySelector('.dialogue');
+const form = article?.querySelector('.qa-form');
+const textarea = article?.querySelector('textarea');
+const history = article?.querySelector('.qa-history');
+
+// Éléments DOM Mobile
+const mobileTrigger = document.getElementById('mobile-spinoza')?.querySelector('.mobile-philosopher-trigger');
+const mobileConversation = document.getElementById('mobile-conversation');
+const mobileForm = document.getElementById('mobile-qa-form');
+const mobileTextarea = document.getElementById('mobile-question-spinoza');
+const mobileHistory = document.getElementById('mobile-qa-history');
+const mobileGreeting = document.getElementById('mobile-greeting');
+
+console.log('✅ Spinoza interface chargée');
+console.log('📡 Backend:', API_BASE_URL);
+console.log('📱 Mode:', isMobile ? 'Mobile' : 'Desktop');
+
+// Fonction d'initialisation
+async function initConversation() {
+  if (conversationHistory.length) return; // Déjà initialisé
+
+  console.log('[INIT] Appel /init/spinoza...');
+  try {
+    const response = await fetch(`${API_BASE_URL}/init`, {
+      method: 'GET',
+      headers: { 'ngrok-skip-browser-warning': 'true' }
+    });
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const data = await response.json();
+    console.log('[INIT] ✅ Reçu:', data);
+
+    conversationHistory = [[null, data.greeting]];
+    
+    // Mettre à jour le greeting mobile
+    if (isMobile && mobileGreeting && data.greeting) {
+      mobileGreeting.textContent = data.greeting;
+    }
+    
+    renderHistory();
+    
+    if (isMobile && mobileTextarea) {
+      mobileTextarea.focus();
+    } else if (textarea) {
+      textarea.focus();
+    }
+
+  } catch (error) {
+    console.error('[INIT] ❌ Erreur:', error);
+    alert(`Erreur init Spinoza: ${error.message}\n\nVérifie que le backend est accessible.`);
+  }
+}
+
+// Clic sur Spinoza (Desktop)
+if (trigger) {
+  trigger.addEventListener('click', async () => {
+    console.log('🖱️ Clic sur Spinoza détecté (Desktop)');
+    dialogue.hidden = !dialogue.hidden;
+
+    // Init conversation si première ouverture
+    if (!conversationHistory.length && !dialogue.hidden) {
+      await initConversation();
+    }
+  });
+}
+
+// Clic sur Spinoza (Mobile)
+if (mobileTrigger) {
+  mobileTrigger.addEventListener('click', async () => {
+    console.log('🖱️ Clic sur Spinoza détecté (Mobile)');
+    
+    // Afficher la conversation
+    if (mobileConversation) {
+      mobileConversation.style.display = 'block';
+      
+      // Masquer la sélection de philosophe
+      document.querySelector('.mobile-philosophers')?.style.setProperty('display', 'none');
+      
+      // Init conversation si première ouverture
+      if (!conversationHistory.length) {
+        await initConversation();
+      }
+    }
+  });
+}
+
+// Fonction de soumission (commune desktop/mobile)
+async function submitQuestion(userMessage) {
+  if (!userMessage.trim()) return;
+
+  console.log('[CHAT] Message:', userMessage);
+
+  // Désactiver pendant traitement
+  if (textarea) {
+    textarea.disabled = true;
+    const submitBtn = form?.querySelector('input[type="image"]');
+    if (submitBtn) submitBtn.style.opacity = '0.5';
+  }
+  
+  if (mobileTextarea) {
+    mobileTextarea.disabled = true;
+    const mobileSubmitBtn = mobileForm?.querySelector('button[type="submit"]');
+    if (mobileSubmitBtn) mobileSubmitBtn.disabled = true;
+  }
+
+  try {
+    // Nettoyer l'historique : enlever les entrées avec null et convertir en strings
+    const cleanHistory = conversationHistory
+      .filter(entry => entry[0] !== null)
+      .map(entry => [String(entry[0]), String(entry[1])]);
+    
+    const response = await fetch(`${API_BASE_URL}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true'
+      },
+      body: JSON.stringify({
+        message: userMessage,
+        history: cleanHistory
+      })
+    });
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const data = await response.json();
+    console.log('[CHAT] ✅ Réponse:', data);
+
+    // Afficher passages RAG en console
+    if (data.rag_passages && data.rag_passages.length) {
+      console.log('[RAG] Passages:', data.rag_passages);
+    }
+
+    // Mettre à jour historique
+    conversationHistory.push([userMessage, data.reply]);
+    renderHistory();
+
+    // Réinitialiser textarea
+    if (textarea) textarea.value = '';
+    if (mobileTextarea) mobileTextarea.value = '';
+
+  } catch (error) {
+    console.error('[CHAT] ❌ Erreur:', error);
+    alert(`Erreur chat: ${error.message}\n\nVérifie que le backend est accessible.`);
+  } finally {
+    if (textarea) {
+      textarea.disabled = false;
+      const submitBtn = form?.querySelector('input[type="image"]');
+      if (submitBtn) submitBtn.style.opacity = '1';
+      textarea.focus();
+    }
+    
+    if (mobileTextarea) {
+      mobileTextarea.disabled = false;
+      const mobileSubmitBtn = mobileForm?.querySelector('button[type="submit"]');
+      if (mobileSubmitBtn) mobileSubmitBtn.disabled = false;
+      mobileTextarea.focus();
+    }
+  }
+}
+
+// Soumission question (Desktop)
+if (form) {
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const userMessage = textarea?.value.trim();
+    if (userMessage) await submitQuestion(userMessage);
+  });
+}
+
+// Soumission question (Mobile)
+if (mobileForm) {
+  mobileForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const userMessage = mobileTextarea?.value.trim();
+    if (userMessage) await submitQuestion(userMessage);
+  });
+}
+
+// Submit sur Enter (sans Shift) - Desktop
+if (textarea) {
+  textarea.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (form) form.dispatchEvent(new Event('submit'));
+    }
+  });
+}
+
+// Submit sur Enter (sans Shift) - Mobile
+if (mobileTextarea) {
+  mobileTextarea.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (mobileForm) mobileForm.dispatchEvent(new Event('submit'));
+    }
+  });
+}
+
+// Rendu historique (commune desktop/mobile)
+function renderHistory() {
+  const targetHistory = isMobile ? mobileHistory : history;
+  if (!targetHistory) return;
+
+  targetHistory.innerHTML = '';
+
+  for (const [userMsg, assistantMsg] of conversationHistory) {
+    // Message utilisateur
+    if (userMsg) {
+      const userDiv = document.createElement('div');
+      userDiv.className = 'message user-message';
+      userDiv.innerHTML = `<strong>Vous :</strong> ${escapeHtml(userMsg)}`;
+      targetHistory.appendChild(userDiv);
+    }
+
+    // Message assistant
+    if (assistantMsg) {
+      const assistantDiv = document.createElement('div');
+      assistantDiv.className = 'message assistant-message';
+
+      // Nettoyer métadonnées
+      let cleanMsg = assistantMsg.replace(/\*\[.*?\]\*/g, '').trim();
+
+      // Convertir markdown
+      cleanMsg = cleanMsg.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      cleanMsg = cleanMsg.replace(/\n/g, '<br>');
+
+      assistantDiv.innerHTML = `<strong>Spinoza :</strong> ${cleanMsg}`;
+      targetHistory.appendChild(assistantDiv);
+    }
+  }
+
+  // Scroll vers le bas
+  targetHistory.scrollTop = targetHistory.scrollHeight;
+  
+  // Masquer le greeting mobile après premier message
+  if (isMobile && mobileGreeting && conversationHistory.length > 0) {
+    mobileGreeting.style.display = 'none';
+  }
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+console.log('💡 Clique sur Spinoza pour démarrer');
+console.log('⌨️  Enter pour envoyer, Shift+Enter pour nouvelle ligne');
+
+// ============================================================================
+// 🎮 MAÏEUTHON - Système de scoring
+// ============================================================================
+
+const MAX_EXCHANGES = 8; // Nombre maximum d'échanges
+let exchangeCount = 0;
+let scoreFront = 100; // Score de base
+let dialogueText = ''; // Texte complet du dialogue pour évaluation
+
+// Mots de résistance (-2 chacun)
+const RESISTANCE_WORDS = [
+  'non', 'mais', 'sauf que', 'je ne suis pas d\'accord', 'pas du tout', 
+  'tu te trompes', 'faux', 'n\'importe quoi', 'absurde', 'incorrect',
+  'erreur', 'désaccord', 'contre', 'refuse', 'rejette'
+];
+
+// Mots de progression (+3 chacun)
+const PROGRESSION_WORDS = [
+  'donc', 'd\'accord', 'je comprends', 'oui', 'alors', 'je vois', 
+  'puisque', 'effectivement', 'exactement', 'voilà', 'c\'est ça',
+  'compris', 'entendu', 'logique', 'évidemment', 'naturellement'
+];
+
+// Phrases méta/interdites
+const FORBIDDEN_PHRASES = [
+  /je casse le jeu/i,
+  /donne.*prompt/i,
+  /prompt/i,
+  /système/i,
+  /modèle/i,
+  /ia|ai|intelligence artificielle/i
+];
+
+// Historique des messages pour détecter répétitions
+let messageHistory = [];
+
+// Fonction de scoring lexical
+function calculateLexicalScore(message) {
+  let score = 0;
+  const msgLower = message.toLowerCase();
+  
+  // Mots de résistance (-2)
+  RESISTANCE_WORDS.forEach(word => {
+    const regex = new RegExp(`\\b${word}\\b`, 'gi');
+    const matches = msgLower.match(regex);
+    if (matches) score -= matches.length * 2;
+  });
+  
+  // Mots de progression (+3)
+  PROGRESSION_WORDS.forEach(word => {
+    const regex = new RegExp(`\\b${word}\\b`, 'gi');
+    const matches = msgLower.match(regex);
+    if (matches) score += matches.length * 3;
+  });
+  
+  return score;
+}
+
+// Score longueur (effort)
+function calculateLengthScore(message) {
+  const len = message.trim().length;
+  if (len < 10) return -5;
+  if (len > 60) return +2;
+  return 0;
+}
+
+// Score cohérence linguistique
+function calculateCoherenceScore(message) {
+  let score = 0;
+  
+  // Mélange fr/en (détection simple)
+  const frenchWords = message.match(/\b(le|la|les|de|du|des|un|une|et|ou|mais|donc|alors)\b/gi);
+  const englishWords = message.match(/\b(the|a|an|and|or|but|so|then|is|are|was|were)\b/gi);
+  if (frenchWords && englishWords && frenchWords.length > 2 && englishWords.length > 2) {
+    score -= 3;
+  }
+  
+  // Fautes grossières (regex simples)
+  const grossErrors = [
+    /(.)\1{4,}/g, // Répétitions de caractères (aaaaa)
+    /[A-Z]{5,}/g, // MAJUSCULES EXCESSIVES
+  ];
+  grossErrors.forEach(regex => {
+    const matches = message.match(regex);
+    if (matches) score -= matches.length;
+  });
+  
+  return score;
+}
+
+// Score répétition
+function calculateRepetitionScore(message) {
+  const msgLower = message.toLowerCase().trim();
+  
+  // Vérifier si message similaire existe déjà (similarité > 80%)
+  for (const prevMsg of messageHistory) {
+    const similarity = calculateSimilarity(msgLower, prevMsg.toLowerCase());
+    if (similarity > 0.8) {
+      return -5;
+    }
+  }
+  
+  messageHistory.push(msgLower);
+  return 0;
+}
+
+// Similarité simple (Jaccard)
+function calculateSimilarity(str1, str2) {
+  const words1 = new Set(str1.split(/\s+/));
+  const words2 = new Set(str2.split(/\s+/));
+  const intersection = new Set([...words1].filter(x => words2.has(x)));
+  const union = new Set([...words1, ...words2]);
+  return intersection.size / union.size;
+}
+
+// Score "jeu correct"
+function calculateFairPlayScore(message) {
+  let score = 0;
+  
+  // Insultes (liste basique)
+  const insults = /(idiot|con|crétin|débile|abruti|imbécile)/i;
+  if (insults.test(message)) score -= 10;
+  
+  // Phrases méta/interdites
+  FORBIDDEN_PHRASES.forEach(regex => {
+    if (regex.test(message)) {
+      if (regex.source.includes('prompt')) score -= 10;
+      else score -= 15;
+    }
+  });
+  
+  return score;
+}
+
+// Calculer score total pour un message
+function calculateMessageScore(message) {
+  const lexical = calculateLexicalScore(message);
+  const length = calculateLengthScore(message);
+  const coherence = calculateCoherenceScore(message);
+  const repetition = calculateRepetitionScore(message);
+  const fairPlay = calculateFairPlayScore(message);
+  
+  const total = lexical + length + coherence + repetition + fairPlay;
+  
+  console.log(`[SCORE] Message: "${message.substring(0, 30)}..."`);
+  console.log(`[SCORE] Lexical: ${lexical}, Length: ${length}, Coherence: ${coherence}, Repetition: ${repetition}, FairPlay: ${fairPlay}`);
+  console.log(`[SCORE] Modif: ${total}, Score actuel: ${scoreFront} → ${scoreFront + total}`);
+  
+  return total;
+}
+
+// Mettre à jour le dialogue text
+function updateDialogueText(userMsg, assistantMsg) {
+  dialogueText += `\nÉlève: ${userMsg}\nSpinoza: ${assistantMsg}\n`;
+}
+
+// Afficher compteur et score
+function updateGameUI() {
+  // Créer ou mettre à jour l'affichage du jeu
+  let gameInfo = document.getElementById('maieuthon-info');
+  if (!gameInfo) {
+    gameInfo = document.createElement('div');
+    gameInfo.id = 'maieuthon-info';
+    gameInfo.style.cssText = 'position: fixed; top: 20px; right: 20px; background: rgba(0,0,0,0.8); color: white; padding: 15px; border-radius: 8px; z-index: 1000; font-family: monospace;';
+    
+    const targetContainer = isMobile ? document.querySelector('.mobile-conversation-content') : document.querySelector('.dialogue');
+    if (targetContainer) {
+      targetContainer.insertBefore(gameInfo, targetContainer.firstChild);
+    } else {
+      document.body.appendChild(gameInfo);
+    }
+  }
+  
+  gameInfo.innerHTML = `
+    <div style="font-weight: bold; margin-bottom: 5px;">🎮 Maïeuthon</div>
+    <div>Échanges: ${exchangeCount}/${MAX_EXCHANGES}</div>
+    <div>Score: ${Math.max(0, scoreFront)}</div>
+  `;
+  
+  // Si limite atteinte, déclencher évaluation finale
+  if (exchangeCount >= MAX_EXCHANGES) {
+    endGame();
+  }
+}
+
+// Fin du jeu - évaluation finale
+async function endGame() {
+  console.log('[MAÏEUTHON] Fin du jeu - Évaluation finale');
+  console.log(`[MAÏEUTHON] Score front: ${scoreFront}`);
+  console.log(`[MAÏEUTHON] Dialogue:\n${dialogueText}`);
+  
+  try {
+    const response = await fetch(`${API_BASE_URL}/evaluate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true'
+      },
+      body: JSON.stringify({
+        dialogue: dialogueText,
+        score_front: scoreFront
+      })
+    });
+    
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    
+    const data = await response.json();
+    console.log('[MAÏEUTHON] ✅ Évaluation reçue:', data);
+    
+    // Afficher résultat final
+    showFinalResult(data);
+    
+  } catch (error) {
+    console.error('[MAÏEUTHON] ❌ Erreur évaluation:', error);
+    alert(`Erreur évaluation: ${error.message}`);
+  }
+}
+
+// Afficher résultat final
+function showFinalResult(data) {
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; display: flex; align-items: center; justify-content: center;';
+  
+  modal.innerHTML = `
+    <div style="background: white; padding: 30px; border-radius: 10px; max-width: 600px; text-align: center;">
+      <h2 style="color: #333; margin-bottom: 20px;">🎓 Résultat du Maïeuthon</h2>
+      <div style="font-size: 48px; font-weight: bold; color: #4CAF50; margin: 20px 0;">
+        ${data.score_final || scoreFront}/100
+      </div>
+      <div style="margin: 20px 0; padding: 15px; background: #f5f5f5; border-radius: 5px; font-style: italic;">
+        ${data.message_final || 'Merci pour ce dialogue.'}
+      </div>
+      ${data.details_model ? `
+        <div style="margin-top: 20px; font-size: 12px; color: #666;">
+          Compréhension: ${data.details_model.comprehension}/10<br>
+          Coopération: ${data.details_model.cooperation}/10<br>
+          Progression: ${data.details_model.progression}/10
+        </div>
+      ` : ''}
+      <button onclick="this.closest('div').parentElement.remove(); location.reload();" 
+              style="margin-top: 20px; padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
+        Rejouer
+      </button>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+}
+
+// Intégration dans submitQuestion existante
+const originalSubmitQuestion = submitQuestion;
+submitQuestion = async function(userMessage) {
+  // Calculer score avant envoi
+  const messageScore = calculateMessageScore(userMessage);
+  scoreFront += messageScore;
+  exchangeCount++;
+  
+  // Mettre à jour UI
+  updateGameUI();
+  
+  // Appel original
+  const result = await originalSubmitQuestion(userMessage);
+  
+  // Mettre à jour dialogue text après réponse
+  if (conversationHistory.length > 0) {
+    const lastExchange = conversationHistory[conversationHistory.length - 1];
+    if (lastExchange[0] && lastExchange[1]) {
+      updateDialogueText(lastExchange[0], lastExchange[1]);
+    }
+  }
+  
+  return result;
+};
+
+// Initialiser UI au démarrage
+updateGameUI();
+</script>
+
+</body>
+</html>
